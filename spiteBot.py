@@ -6,7 +6,7 @@ import re
 
 CHAT_MSG = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
 
-# network functions go here
+# connecting and shit
 
 server = socket.socket()
 server.connect((cfg.HOST, cfg.PORT))
@@ -30,14 +30,16 @@ def chat(msg):
 	server.send(output)
 
 
+# Runs admin commands
+# they require special logic for each
 def doAdmin(msg):
-	msg = msg.strip("\r\n").strip("&")
+	msg = msg.strip("\r\n").strip("&").lower()
 
-	if msg.lower() == "off":
+	if msg == "off":
 		chat("Goodbye")
 		exit(0)
 
-	elif "adduser" in msg.lower():
+	elif "adduser" in msg:
 		newName = msg[8:]
 		approved.names.append(newName)
 		chat("You have been added for base commands @" + newName)
@@ -46,13 +48,15 @@ def doAdmin(msg):
 		f.close()
 
 
+# runs general chat commands
 def doThing(msg):
-	msg = msg.strip("\r\n").strip("$")
-	temp = str(approved.commandsDict.get(msg.lower()))
+	msg = msg.strip("\r\n").strip("$").lower()
+	temp = str(approved.commandsDict.get(msg))
 	if temp != 'None':
 		chat(temp)
 
 
+# checks is user is an admin
 def verifyAdmin(user, msg):
 	if user in approved.admins:
 		doAdmin(msg)
@@ -60,21 +64,33 @@ def verifyAdmin(user, msg):
 		chat("You are not authorized for admin commands @" + user)
 
 
+# checks if user is approved user for basic commands
+# or runs freebe commands
 def verify(user, msg):
-	if user in approved.names:
+	a = msg.strip("\r\n").strip("$").lower()
+	temp = str(approved.freeCommands.get(a))
+
+	if temp != "None":
+		chat(temp)
+
+	elif user in approved.names:
 		doThing(msg)
+
 	else:
 		chat("You are not authorized for base commands @" + user + ". Please ask @DrCobaltJedi for approval.")
 
 
 def main():
-	chat("I am Spitebot")
+	chat("I am Spitebot version 1.1")
 	time.sleep(3)
 	chat("I am ALIVE")
+
 	while True:
 		response = server.recv(1024).decode("utf-8")
-		if response == "PING :tmi.twitch.tv\r\n":
-			server.send("PONG :tmi.twitch.tv\r\n".encode("utf-8"))
+
+		if response == "PING :tmi.chat.twitch.tv\r\n":
+			server.send("PONG :tmi.chat.twitch.tv\r\n".encode("utf-8"))
+
 		else:
 			username = re.search(r"\w+", response).group(0)  # return the entire match
 			message = CHAT_MSG.sub("", response)
