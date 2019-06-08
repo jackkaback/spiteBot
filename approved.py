@@ -19,5 +19,6 @@ commandsDict = {
 
 freeCommands = {
 	"info": "I am spite bot v1.1, I was written out of spite for the insolent bot @farmscarecrow",
-	"commands": "All freebe and approved-user commands start with $, they are: commands/info"
+	"commands": "All freebe and approved-user commands start with $, they are: commands/info/version",
+	"version": "V 1.0: Launch \r\nV 1.1: added freebe commands \r\nV 1.2: added runtime addition of commands"
 }

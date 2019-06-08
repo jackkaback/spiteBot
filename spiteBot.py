@@ -33,6 +33,7 @@ def chat(msg):
 # Runs admin commands
 # they require special logic for each
 def doAdmin(msg):
+	MSGPrime = msg.strip("\r\n").strip("&")
 	msg = msg.strip("\r\n").strip("&").lower()
 
 	if msg == "off":
@@ -47,6 +48,14 @@ def doAdmin(msg):
 		f.write(newName.lower())
 		f.close()
 
+	elif "addcmd" in msg:
+		msg = MSGPrime[7:]
+		cmd = msg.split(":")
+		approved.commandsDict[cmd[0].lower()] = cmd[1]
+		chat("Added new command: " + cmd[0])
+		f = open("cmdsAdd", "a")
+		f.write('"' + cmd[0].lower() + '": "' + cmd[1] + '"')
+		f.close()
 
 # runs general chat commands
 def doThing(msg):
@@ -81,7 +90,7 @@ def verify(user, msg):
 
 
 def main():
-	chat("I am Spitebot version 1.1")
+	chat("I am Spitebot version 1.2")
 	time.sleep(3)
 	chat("I am ALIVE")
 
