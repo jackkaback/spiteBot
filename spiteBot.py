@@ -1,8 +1,15 @@
+#!/usr/bin/env python3
+
 import cfg
 import approved
 import time
 import socket
 import re
+
+version = 1.3
+adminChar = "&"
+userChar = "$"
+freebeChar = "*"
 
 CHAT_MSG = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
 
@@ -33,8 +40,8 @@ def chat(msg):
 # Runs admin commands
 # they require special logic for each
 def doAdmin(msg):
-	MSGPrime = msg.strip("\r\n").strip("&")
-	msg = msg.strip("\r\n").strip("&").lower()
+	MSGPrime = msg.strip("\r\n").strip(adminChar)
+	msg = MSGPrime.lower()
 
 	if msg == "off":
 		chat("Goodbye")
@@ -43,7 +50,7 @@ def doAdmin(msg):
 	elif "adduser" in msg:
 		newName = msg[8:]
 		approved.names.append(newName)
-		chat("You have been added for base commands @" + newName)
+		chat("Ye have been added for base commands @" + newName)
 		f = open("namesAdd", "a")
 		f.write(newName.lower())
 		f.close()
@@ -57,11 +64,20 @@ def doAdmin(msg):
 		f.write('"' + cmd[0].lower() + '": "' + cmd[1] + '"')
 		f.close()
 
+
 # runs general chat commands
 def doThing(msg):
-	msg = msg.strip("\r\n").strip("$").lower()
+	msg = msg.strip("\r\n").strip(userChar).lower()
 	temp = str(approved.commandsDict.get(msg))
 	if temp != 'None':
+		chat(temp)
+
+
+def dofreebe(msg):
+	a = msg.strip("\r\n").strip(freebeChar).lower()
+	temp = str(approved.freeCommands.get(a))
+
+	if temp != "None":
 		chat(temp)
 
 
@@ -70,44 +86,42 @@ def verifyAdmin(user, msg):
 	if user in approved.admins:
 		doAdmin(msg)
 	else:
-		chat("You are not authorized for admin commands @" + user)
+		chat("Spitebot does not recognize your authority @" + user)
 
 
 # checks if user is approved user for basic commands
 # or runs freebe commands
 def verify(user, msg):
-	a = msg.strip("\r\n").strip("$").lower()
-	temp = str(approved.freeCommands.get(a))
-
-	if temp != "None":
-		chat(temp)
-
-	elif user in approved.names:
+	if user in approved.names:
 		doThing(msg)
 
 	else:
-		chat("You are not authorized for base commands @" + user + ". Please ask @DrCobaltJedi for approval.")
+		chat("Ye are not authorized for base commands @" + user + ". Please ask @DrCobaltJedi for approval.")
 
 
 def main():
-	chat("I am Spitebot version 1.2")
+
+	chat("I am Spitebot version " + str(version))
 	time.sleep(3)
 	chat("I am ALIVE")
 
 	while True:
 		response = server.recv(1024).decode("utf-8")
 
-		if response == "PING :tmi.chat.twitch.tv\r\n":
-			server.send("PONG :tmi.chat.twitch.tv\r\n".encode("utf-8"))
+		if response == "PING :tmi.twitch.tv\r\n":
+			server.send("PONG :tmi.twitch.tv\r\n".encode("utf-8"))
 
 		else:
 			username = re.search(r"\w+", response).group(0)  # return the entire match
 			message = CHAT_MSG.sub("", response)
 
-			if message[0] == '$':
+			if message[0] == userChar:
 				verify(username, message)
 
-			elif message[0] == '&':
+			elif message[0] == freebeChar:
+				dofreebe(message)
+
+			elif message[0] == adminChar:
 				verifyAdmin(username, message)
 
 			elif username == "farmscarecrow":
