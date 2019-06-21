@@ -7,14 +7,22 @@ import time
 import socket
 import re
 
-todo = {}
-version = 1.4
+# specific users
+host = cfg.CHAN[1:]
 owner = "drcobaltjedi"
+
+# useful chars
 adminChar = "&"
 userChar = "$"
 freebeChar = "*"
 todoChar = "!"
 
+# other useful data
+todoLength = 1
+todo = {}
+version = "1.4.3"
+currentRelease = "This version adds a todo list for the streamer %s to keep track of things. To add to the list type" \
+				 " !addtodo, to see the list type !print, and !delete N to delete the N todo"
 
 CHAT_MSG = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
 
@@ -28,7 +36,7 @@ server.send(bytes('NICK ' + cfg.NICK + '\r\n', 'utf-8'))
 server.send(bytes('USER ' + cfg.NICK + ' 0 * ' + cfg.NICK + '\r\n', 'utf-8'))
 server.send(bytes('JOIN ' + cfg.CHAN + '\r\n', 'utf-8'))
 
-host = cfg.CHAN[1:]
+
 
 
 def chat(msg):
@@ -117,29 +125,40 @@ def verify(user, msg):
 		chat("Ye are not authorized for base commands @" + user + ". Please ask @DrCobaltJedi for approval.")
 
 
+def delTODO(msg):
+	del todo[msg]
+
+
 def printTODO():
 	for i in todo:
-		chat(todo.get(i))
+		chat(i + ": " + todo.get(i))
 		time.sleep(.1)
 
 
 def addTODO(msg):
-	todo[len(todo)] = msg
+	global todoLength
+	todo[todoLength] = msg
+	chat("Added todo: " + msg)
+	todoLength += 1
 
 
 def doTODO(msg):
 	msgTest = msg.lower()
 	if "addtodo" in msgTest:
-		addTODO(msg)
+		addTODO(msg[8:])
 	elif "print" in msgTest:
 		printTODO()
+	elif "delete" in msgTest:
+		delTODO(msg[6:].strip())
 
 
 def main():
 
 	chat("I am Spitebot version " + str(version))
-	time.sleep(3)
+	time.sleep(1.5)
 	chat("I am ALIVE")
+	time.sleep(1.5)
+	chat(currentRelease % host)
 
 	while True:
 		response = server.recv(1024).decode("utf-8")
