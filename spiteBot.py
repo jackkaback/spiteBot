@@ -9,6 +9,7 @@ import re
 
 todo = {}
 version = 1.4
+owner = "drcobaltjedi"
 adminChar = "&"
 userChar = "$"
 freebeChar = "*"
@@ -123,9 +124,15 @@ def printTODO():
 
 
 def addTODO(msg):
+	todo[len(todo)] = msg
+
+
+def doTODO(msg):
 	msgTest = msg.lower()
-	if "todo" in msgTest:
-		todo[len(todo)] = msg
+	if "addtodo" in msgTest:
+		addTODO(msg)
+	elif "print" in msgTest:
+		printTODO()
 
 
 def main():
@@ -153,8 +160,8 @@ def main():
 			elif message[0] == adminChar:
 				verifyAdmin(username, message)
 
-			elif message[0] == todoChar and (username == host or username == "drcobaltjedi"):
-				addTODO(message[1:])
+			elif message[0] == todoChar and (username == host or username == owner):
+				doTODO(message[1:])
 
 			elif username == "farmscarecrow":
 				chat("Insolent bot")
