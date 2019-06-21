@@ -6,7 +6,7 @@ HOST = "irc.chat.twitch.tv"
 PORT = 6667
 
 # your Twitch username, lowercase
-NICK = "usurperbot117"
+NICK = ""
 
 
 # the channel you want to join

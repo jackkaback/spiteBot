@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 
+import _thread
 import cfg
 import approved
 import time
 import socket
 import re
 
-version = 1.3
+todo = {}
+version = 1.4
 adminChar = "&"
 userChar = "$"
 freebeChar = "*"
+todoChar = "!"
+
 
 CHAT_MSG = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
 
@@ -23,6 +27,8 @@ server.send(bytes('NICK ' + cfg.NICK + '\r\n', 'utf-8'))
 server.send(bytes('USER ' + cfg.NICK + ' 0 * ' + cfg.NICK + '\r\n', 'utf-8'))
 server.send(bytes('JOIN ' + cfg.CHAN + '\r\n', 'utf-8'))
 
+host = cfg.CHAN[1:]
+
 
 def chat(msg):
 
@@ -33,8 +39,10 @@ def chat(msg):
 	msg  -- the message to be sent
 	"""
 
-	output = bytes("PRIVMSG {} :{}\r\n".format(cfg.CHAN, msg), 'utf-8')
-	server.send(output)
+	temp = msg.split("\t")
+	for i in temp:
+		output = bytes("PRIVMSG {} :{}\r\n".format(cfg.CHAN, i), 'utf-8')
+		server.send(output)
 
 
 # Runs admin commands
@@ -52,7 +60,7 @@ def doAdmin(msg):
 		approved.names.append(newName)
 		chat("Ye have been added for base commands @" + newName)
 		f = open("namesAdd", "a")
-		f.write(newName.lower())
+		f.write(newName.lower() + "\n")
 		f.close()
 
 	elif "addcmd" in msg:
@@ -61,7 +69,16 @@ def doAdmin(msg):
 		approved.commandsDict[cmd[0].lower()] = cmd[1]
 		chat("Added new command: " + cmd[0])
 		f = open("cmdsAdd", "a")
-		f.write('"' + cmd[0].lower() + '": "' + cmd[1] + '"')
+		f.write('"' + cmd[0].lower() + '": "' + cmd[1] + '",\n')
+		f.close()
+
+	elif "addfree" in msg:
+		msg = MSGPrime[8:]
+		cmd = msg.split(":")
+		approved.freeCommands[cmd[0].lower()] = cmd[1]
+		chat("Added new freebe: " + cmd[0])
+		f = open("freesAdd", "a")
+		f.write('"' + cmd[0].lower() + '": "' + cmd[1] + '",\n')
 		f.close()
 
 
@@ -73,6 +90,7 @@ def doThing(msg):
 		chat(temp)
 
 
+# runs freebe commands
 def dofreebe(msg):
 	a = msg.strip("\r\n").strip(freebeChar).lower()
 	temp = str(approved.freeCommands.get(a))
@@ -90,13 +108,24 @@ def verifyAdmin(user, msg):
 
 
 # checks if user is approved user for basic commands
-# or runs freebe commands
 def verify(user, msg):
 	if user in approved.names:
 		doThing(msg)
 
 	else:
 		chat("Ye are not authorized for base commands @" + user + ". Please ask @DrCobaltJedi for approval.")
+
+
+def printTODO():
+	for i in todo:
+		chat(todo.get(i))
+		time.sleep(.1)
+
+
+def addTODO(msg):
+	msgTest = msg.lower()
+	if "todo" in msgTest:
+		todo[len(todo)] = msg
 
 
 def main():
@@ -123,6 +152,9 @@ def main():
 
 			elif message[0] == adminChar:
 				verifyAdmin(username, message)
+
+			elif message[0] == todoChar and (username == host or username == "drcobaltjedi"):
+				addTODO(message[1:])
 
 			elif username == "farmscarecrow":
 				chat("Insolent bot")
