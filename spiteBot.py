@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-import _thread
+# import _thread
+import smtplib
 import cfg
 import approved
 import time
@@ -11,18 +12,23 @@ import re
 host = cfg.CHAN[1:]
 owner = "drcobaltjedi"
 
+if owner not in approved.admins:
+	approved.admins.append(owner)
+
+if owner not in approved.names:
+	approved.names.append(owner)
+
 # useful chars
 adminChar = "&"
 userChar = "$"
 freebeChar = "*"
-todoChar = "!"
+streamerChar = "!"
 
 # other useful data
 todoLength = 1
 todo = {}
-version = "1.4.3"
-currentRelease = "This version adds a todo list for the streamer %s to keep track of things. To add to the list type" \
-				 " !addtodo, to see the list type !print, and !delete N to delete the N todo"
+version = "1.5"
+currentRelease = "This version adds an alert to the bots owner. Type !alert xxx to send a message saying xxx"
 
 CHAT_MSG = re.compile(r"^:\w+!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :")
 
@@ -35,8 +41,6 @@ server.send(bytes('PASS ' + cfg.PASS + '\r\n', 'utf-8'))
 server.send(bytes('NICK ' + cfg.NICK + '\r\n', 'utf-8'))
 server.send(bytes('USER ' + cfg.NICK + ' 0 * ' + cfg.NICK + '\r\n', 'utf-8'))
 server.send(bytes('JOIN ' + cfg.CHAN + '\r\n', 'utf-8'))
-
-
 
 
 def chat(msg):
@@ -125,40 +129,62 @@ def verify(user, msg):
 		chat("Ye are not authorized for base commands @" + user + ". Please ask @DrCobaltJedi for approval.")
 
 
+def alert(msg):
+	msg = "From: " + host + ":" + msg[5:]
+	fromAddress = 'DrTweetBot@gmail.com'
+	username = ''
+	password = ''
+	server = smtplib.SMTP('smtp.gmail.com:587')
+	server.starttls()
+
+	# logs on
+	server.login(username, password)
+	server.sendmail(from_addr=fromAddress, to_addrs=approved.adminContact, msg=msg)
+	server.quit()
+
+
 def delTODO(msg):
+	msg = msg[6:].strip()
 	del todo[msg]
 
 
-def printTODO():
+def printTODO(msg):
+	output = ""
 	for i in todo:
-		chat(i + ": " + todo.get(i))
-		time.sleep(.1)
+		output += str(i + ": " + todo.get(str(i)) + "\t")
+
+	chat(output[:-1])
 
 
 def addTODO(msg):
 	global todoLength
-	todo[todoLength] = msg
+	msg = msg[8:]
+	todo[str(todoLength)] = msg
 	chat("Added todo: " + msg)
 	todoLength += 1
 
 
-def doTODO(msg):
-	msgTest = msg.lower()
-	if "addtodo" in msgTest:
-		addTODO(msg[8:])
-	elif "print" in msgTest:
-		printTODO()
-	elif "delete" in msgTest:
-		delTODO(msg[6:].strip())
+dictAdminFuncs = {"addtodo": addTODO,
+				"print": printTODO,
+				"delete": delTODO,
+				"alert": alert}
+
+
+def doStreamer(msg):
+	msgTest = msg.lower().split(" ")
+	temp = dictAdminFuncs.get(msgTest[0])
+
+	if temp != None:
+		temp(msg)
 
 
 def main():
 
 	chat("I am Spitebot version " + str(version))
-	time.sleep(1.5)
-	chat("I am ALIVE")
-	time.sleep(1.5)
-	chat(currentRelease % host)
+	# time.sleep(1.5)
+	# chat("I am ALIVE")
+	# time.sleep(1.5)
+	# chat(currentRelease)
 
 	while True:
 		response = server.recv(1024).decode("utf-8")
@@ -169,9 +195,13 @@ def main():
 		else:
 			username = re.search(r"\w+", response).group(0)  # return the entire match
 			message = CHAT_MSG.sub("", response)
+			message = message[:-2]
 
 			if message[0] == userChar:
 				verify(username, message)
+
+			elif message == "!hail":
+				chat("HAIL THE APOCALYPSE")
 
 			elif message[0] == freebeChar:
 				dofreebe(message)
@@ -179,11 +209,11 @@ def main():
 			elif message[0] == adminChar:
 				verifyAdmin(username, message)
 
-			elif message[0] == todoChar and (username == host or username == owner):
-				doTODO(message[1:])
+			elif message[0] == streamerChar and (username == host or username == owner):
+				doStreamer(message[1:])
 
-			elif username == "farmscarecrow":
-				chat("Insolent bot")
+			# elif username == "farmscarecrow":
+			# 	chat("Insolent bot")
 
 		time.sleep(1 / cfg.RATE)
 
